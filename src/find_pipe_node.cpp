@@ -74,7 +74,7 @@ class cam_pipe{
 		}
 
 		VideoCapture get_cap(){
-			VideoCapture cap("real_pipe1.mp4");//"real_pipe1.mp4");//"GOPR1142.avi");//0);//"rtsp://10.42.0.126/z3-2.mp4");
+			VideoCapture cap(0);//"real_pipe1.mp4");//"GOPR1142.avi");//0);//"rtsp://10.42.0.126/z3-2.mp4");
 
 			if (!cap.isOpened())
 			{
