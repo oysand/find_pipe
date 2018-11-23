@@ -218,13 +218,14 @@ class cam_pipe{
 				Vec4i l = lines[i];
 				double delta_u = l[2]-l[0];
 				double delta_v = l[3]-l[1];
+
 				avg_angle += atan2(delta_v, delta_u)*180/3.14159265;
 
 				lines_passed.push_back(l);
 			}
 			if(lines.size() > 0){
 				avg_angle = avg_angle / lines.size();
-				cout << avg_angle << endl;
+//				cout << avg_angle << endl;
 			}
 			return lines_passed;
 		}
@@ -234,7 +235,6 @@ class cam_pipe{
 			for( size_t i = 0; i < lines.size(); i++ )
 			{
 				Vec4i l = lines[i];
-				cout << l << endl;
 				line( frame, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 3, CV_AA);
 			}
 			return frame;
@@ -255,9 +255,17 @@ class cam_pipe{
 				Vec4i l = lines[i];
 				double delta_u = l[2]-l[0];
 				double delta_v = l[3]-l[1];
+				double l_length = sqrt(delta_u*delta_u+delta_v*delta_v);
+
 				avg_u += delta_u/2;
 				avg_v += delta_v/2;
-				avg_angle += atan2(delta_v, delta_u);//*180/3.14159265;
+				if(atan2(delta_v, delta_u) < 0){
+					avg_angle += atan2(delta_v, delta_u)+3.14159265;//*180/3.14159265;
+					//cout << atan2(delta_v, delta_u)+3.14159265 << endl;
+				} else {
+					avg_angle += atan2(delta_v, delta_u);//*180/3.14159265;
+					//cout << atan2(delta_v, delta_u) << endl;
+				}
 
 				//lines_passed.push_back(l);
 			}
@@ -266,16 +274,22 @@ class cam_pipe{
 				avg_u = avg_u / lines.size();
 				avg_v = avg_v / lines.size();
 			}
-			cout << avg_angle << endl;
+
 //			avg_u += width/2;
 		//	avg_v += height/2;
-			cout << avg_angle << endl;
 
-			cvtColor(frame, frame, CV_GRAY2BGR);
 
-			line( frame,
+			//cvtColor(frame, frame, CV_GRAY2BGR);
+
+/*			line( frame,
 					Point(avg_u+width/2-100*cos(avg_angle), avg_v+height/2-100*sin(avg_angle)),
 					Point(avg_u/2+width/2+100*cos(avg_angle), avg_v+height/2+100*sin(avg_angle)),
+					Scalar(0,255,0), 3, CV_AA);
+*/
+			double length = 200;
+			line( frame,
+					Point(width/2-length*cos(avg_angle), height/2-length*sin(avg_angle)),
+					Point(width/2+length*cos(avg_angle), height/2+length*sin(avg_angle)),
 					Scalar(0,255,0), 3, CV_AA);
 
 			return frame;
@@ -314,7 +328,7 @@ int main(int argc, char **argv)
 			//lines = cam_object.remove_border_lines(lines, cap);
 			//lines = cam_object.sort_lines(lines);
 
-			//frame = cam_object.drawLines(frame, lines);
+			frame = cam_object.drawLines(frame, lines);
 			frame = cam_object.drawOneLine(frame, lines, cap);
 			cam_object.showFrame(frame);
 		}
