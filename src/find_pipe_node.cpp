@@ -74,7 +74,7 @@ class cam_pipe{
 		}
 
 		VideoCapture get_cap(){
-			VideoCapture cap("./pipe_dock/GOPR5068.MP4");//"./pipe_dock/GOPR5068.MP4");//"rtsp://10.42.0.126/z3-1.mp4");//"real_pipe1.mp4");//"GOPR1142.avi");//0);//"rtsp://10.42.0.126/z3-2.mp4");
+			VideoCapture cap("real_pipe1.mp4");//"./pipe_dock/GOPR5068.MP4");//"rtsp://10.42.0.126/z3-1.mp4");//"real_pipe1.mp4");//"GOPR1142.avi");//0);//"rtsp://10.42.0.126/z3-2.mp4");
 
 			if (!cap.isOpened())
 			{
@@ -325,7 +325,7 @@ int main(int argc, char **argv)
 			frame = cam_object.dilate_erode(frame);
 
 			lines = cam_object.find_lines(frame);
-			//lines = cam_object.remove_border_lines(lines, cap);
+			lines = cam_object.remove_border_lines(lines, cap);
 			//lines = cam_object.sort_lines(lines);
 
 			frame = cam_object.drawLines(frame, lines);
