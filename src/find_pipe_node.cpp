@@ -20,11 +20,11 @@ int canny_high = canny_slider_high;
 
 
 const int kernel_max = 20;
-int kernel_slider = 5;
+int kernel_slider = 1;
 int kernel_value = kernel_slider;
 
 const int threshold_max = 300;
-int threshold_slider = 80;
+int threshold_slider = 120;
 int threshold_value = threshold_slider;
 
 const int min_line_length_max = 300;
@@ -74,7 +74,7 @@ class cam_pipe{
 		}
 
 		VideoCapture get_cap(){
-			VideoCapture cap(0);//"real_pipe1.mp4");//"GOPR1142.avi");//0);//"rtsp://10.42.0.126/z3-2.mp4");
+			VideoCapture cap("./pipe_dock/GOPR5068.MP4");//"./pipe_dock/GOPR5068.MP4");//"rtsp://10.42.0.126/z3-1.mp4");//"real_pipe1.mp4");//"GOPR1142.avi");//0);//"rtsp://10.42.0.126/z3-2.mp4");
 
 			if (!cap.isOpened())
 			{
@@ -125,8 +125,7 @@ class cam_pipe{
 		}
 
 
-		Mat read(VideoCapture cap){
-			Mat frame;
+		Mat read(VideoCapture cap, Mat frame){
 
 			bool bSuccess = cap.read(frame);
 
@@ -150,6 +149,7 @@ class cam_pipe{
 
 		void saveFrame(Mat frame, Mat original, int i){
 			imwrite("images/analyzed_"+get_string(i)+"_"
+					+"kernel_"+get_string(kernel_value)+"_"
 					+"canL_"+get_string(canny_low)+"_"
 					+"canH_"+get_string(canny_high)+"_"
 					+"thresh_"+get_string(threshold_value)+"_"
@@ -157,6 +157,7 @@ class cam_pipe{
 					+"maxGap_"+get_string(max_line_gap)+"_"
 					+".jpg",frame);
 			imwrite("images/original_"+get_string(i)+"_"
+					+"kernel_"+get_string(kernel_value)+"_"
 					+"canL_"+get_string(canny_low)+"_"
 					+"canH_"+get_string(canny_high)+"_"
 					+"thresh_"+get_string(threshold_value)+"_"
@@ -166,7 +167,7 @@ class cam_pipe{
 		}
 
 		Mat blur(Mat frame){
-			GaussianBlur(frame, frame, Size(9,9),0,0);
+			GaussianBlur(frame, frame, Size(3,3),0,0);
 			return frame;
 		}
 
@@ -233,8 +234,50 @@ class cam_pipe{
 			for( size_t i = 0; i < lines.size(); i++ )
 			{
 				Vec4i l = lines[i];
+				cout << l << endl;
 				line( frame, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 3, CV_AA);
 			}
+			return frame;
+		}
+
+		Mat drawOneLine(Mat frame, vector<Vec4i> lines, VideoCapture cap){
+			vector<Vec4i> lines_passed;
+			double avg_angle = 0;
+
+			double width = cap.get(CV_CAP_PROP_FRAME_WIDTH);
+			double height = cap.get(CV_CAP_PROP_FRAME_HEIGHT);
+
+			double avg_u = 0;
+			double avg_v = 0;
+
+			for( size_t i = 0; i < lines.size(); i++ )
+			{
+				Vec4i l = lines[i];
+				double delta_u = l[2]-l[0];
+				double delta_v = l[3]-l[1];
+				avg_u += delta_u/2;
+				avg_v += delta_v/2;
+				avg_angle += atan2(delta_v, delta_u);//*180/3.14159265;
+
+				//lines_passed.push_back(l);
+			}
+			if(lines.size() > 0){
+				avg_angle = avg_angle / lines.size();
+				avg_u = avg_u / lines.size();
+				avg_v = avg_v / lines.size();
+			}
+			cout << avg_angle << endl;
+//			avg_u += width/2;
+		//	avg_v += height/2;
+			cout << avg_angle << endl;
+
+			cvtColor(frame, frame, CV_GRAY2BGR);
+
+			line( frame,
+					Point(avg_u+width/2-100*cos(avg_angle), avg_v+height/2-100*sin(avg_angle)),
+					Point(avg_u/2+width/2+100*cos(avg_angle), avg_v+height/2+100*sin(avg_angle)),
+					Scalar(0,255,0), 3, CV_AA);
+
 			return frame;
 		}
 
@@ -247,25 +290,35 @@ class cam_pipe{
 int main(int argc, char **argv)
 {
 	int i = 1;
+	Mat frame;
+	Mat original;
+	vector<Vec4i> lines;
 	cam_pipe cam_object;
 	VideoCapture cap = cam_object.get_cap();
 	cam_object.add_trackbar();
 	while(1){
-		Mat frame = cam_object.read(cap);
-		Mat original;
-		vector<Vec4i> lines;
-		frame.copyTo(original);
-		frame = cam_object.blur(frame);
-		frame = cam_object.detect_edges(frame);
-		frame = cam_object.dilate_erode(frame);
+		//frame = cam_object.read(cap, frame);
 
-		lines = cam_object.find_lines(frame);
-		lines = cam_object.remove_border_lines(lines, cap);
-		lines = cam_object.sort_lines(lines);
+		bool bSuccess = cap.read(frame);
 
-		frame = cam_object.drawLines(frame, lines);
+		if (!bSuccess)
+		{
+			cout << "Cannot read a frame from video stream" << endl;
+		} else {
+			frame.copyTo(original);
+			frame = cam_object.blur(frame);
+			frame = cam_object.detect_edges(frame);
+			frame = cam_object.dilate_erode(frame);
 
-		cam_object.showFrame(frame);
+			lines = cam_object.find_lines(frame);
+			//lines = cam_object.remove_border_lines(lines, cap);
+			//lines = cam_object.sort_lines(lines);
+
+			//frame = cam_object.drawLines(frame, lines);
+			frame = cam_object.drawOneLine(frame, lines, cap);
+			cam_object.showFrame(frame);
+		}
+
 		int c = waitKey(30);
 		if (c == 115) //Press "s" to save
 		{
